@@ -10,6 +10,9 @@ namespace http = beast::http;
 namespace net = boost::asio;
 using tcp = net::ip::tcp;
 
+static const int THRESHHOLD = 20;  // Set the desired threshold for logging
+static const bool ATTACK = true;  // Set if a DDoS attack is in progress
+
 void initialize_database() {
     sqlite3* db;
     char* err_msg = 0;
@@ -127,10 +130,19 @@ bool should_log_ip(const std::string& ip, int threshold) {
     return result;
 }
 
-void handle_request(http::request<http::string_body>& req, const std::string& ip) {
-    const int threshold = 20;  // Set the desired threshold for logging
-    if (should_log_ip(ip, threshold)) {
+void handle_request(http::request<http::string_body>& req, const std::string& ip, http::response<http::string_body>& res)
+{
+    if ((should_log_ip(ip, THRESHHOLD)) or !ATTACK) {
         log_ip(ip);
+
+        // Redirect the user to another webpage
+        res.result(http::status::found);  // HTTP 302 status
+        res.set(http::field::location, "https://www.google.co.uk/");
+        res.body() = "Redirecting to another page";
+    }
+    else {
+        res.result(http::status::ok);  // HTTP 200 status
+        res.body() = "IP not logged";
     }
 }
 
@@ -144,15 +156,15 @@ void do_session(tcp::socket socket) {
         return;
 
     auto ip = socket.remote_endpoint().address().to_string();
-    handle_request(req, ip);
 
     http::response<http::string_body> res{ http::status::ok, req.version() };
     res.set(http::field::server, "Test Server");
     res.set(http::field::content_type, "text/plain");
     res.keep_alive(req.keep_alive());
-    res.body() = "IP logged";
-    res.prepare_payload();
 
+    handle_request(req, ip, res);
+
+    res.prepare_payload();
     http::write(socket, res, ec);
 
     socket.shutdown(tcp::socket::shutdown_send, ec);

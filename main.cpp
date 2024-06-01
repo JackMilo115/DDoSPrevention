@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <sqlite3.h>
+#include <thread>
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -91,19 +92,50 @@ void log_ip(const std::string& ip) {
     sqlite3_close(db);
 }
 
+bool should_log_ip(const std::string& ip, int threshold) {
+    sqlite3* db;
+    int rc = sqlite3_open("ips.db", &db);
 
-void handle_request(http::request<http::string_body>& req, const std::string& ip)
-{
-    //if (req.method() == http::verb::get && req.target() == "/log_ip") {
-    log_ip(ip);
-    //}
+    if (rc != SQLITE_OK) {
+        std::cerr << "Cannot open database: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_close(db);
+        return false;
+    }
+
+    std::string sql_select = "SELECT count FROM ips WHERE ip = '" + ip + "';";
+    sqlite3_stmt* stmt;
+    rc = sqlite3_prepare_v2(db, sql_select.c_str(), -1, &stmt, nullptr);
+
+    if (rc != SQLITE_OK) {
+        std::cerr << "Failed to fetch IP: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return false;
+    }
+
+    rc = sqlite3_step(stmt);
+    bool result = false;
+    if (rc == SQLITE_ROW) {
+        int count = sqlite3_column_int(stmt, 0);
+        if (count >= threshold) {
+            result = true;
+        }
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    return result;
 }
 
-void do_session(tcp::socket socket)
-{
-    bool close = false;
-    beast::error_code ec;
+void handle_request(http::request<http::string_body>& req, const std::string& ip) {
+    const int threshold = 20;  // Set the desired threshold for logging
+    if (should_log_ip(ip, threshold)) {
+        log_ip(ip);
+    }
+}
 
+void do_session(tcp::socket socket) {
+    beast::error_code ec;
     beast::flat_buffer buffer;
     http::request<http::string_body> req;
 
@@ -112,7 +144,6 @@ void do_session(tcp::socket socket)
         return;
 
     auto ip = socket.remote_endpoint().address().to_string();
-
     handle_request(req, ip);
 
     http::response<http::string_body> res{ http::status::ok, req.version() };

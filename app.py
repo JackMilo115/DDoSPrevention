@@ -1,20 +1,15 @@
+from flask import Flask, render_template
 import sqlite3
-from flask import Flask, render_template, url_for
 
 app = Flask(__name__)
 
 @app.route('/')
 def index():
     try:
-        # Connect to the SQLite database
         conn = sqlite3.connect('ips.db')
         cursor = conn.cursor()
-
-        # Execute a query to fetch all IP addresses
-        cursor.execute("SELECT ip FROM ips")
+        cursor.execute("SELECT ip, count FROM ips")
         ips = cursor.fetchall()
-
-        # Close the database connection
         conn.close()
 
         return render_template('index.html', ips=ips)

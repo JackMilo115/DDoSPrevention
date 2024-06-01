@@ -8,8 +8,8 @@
     <body>
         <h1>Logged IP Addresses</h1>
         <ul>
-            {% for ip in ips %}
-            <li>{{ ip }}</li>
+            {% for ip, count in ips %}
+            <li>{{ ip }} - Charm: {{ count }}</li>
             {% endfor %}
         </ul>
     </body>

@@ -9,32 +9,85 @@ namespace http = beast::http;
 namespace net = boost::asio;
 using tcp = net::ip::tcp;
 
-void log_ip(const std::string& ip)
-{
+void initialize_database() {
     sqlite3* db;
+    char* err_msg = 0;
     int rc = sqlite3_open("ips.db", &db);
+
     if (rc != SQLITE_OK) {
-        std::cerr << "Error opening database: " << sqlite3_errmsg(db) << std::endl;
+        std::cerr << "Cannot open database: " << sqlite3_errmsg(db) << std::endl;
         sqlite3_close(db);
         return;
     }
 
-    std::string sql = "CREATE TABLE IF NOT EXISTS ips (id INTEGER PRIMARY KEY, ip TEXT NOT NULL);";
-    rc = sqlite3_exec(db, sql.c_str(), 0, 0, 0);
+    std::string sql = "CREATE TABLE IF NOT EXISTS ips ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "ip TEXT UNIQUE, "
+        "count INTEGER DEFAULT 1);";
+
+    rc = sqlite3_exec(db, sql.c_str(), 0, 0, &err_msg);
     if (rc != SQLITE_OK) {
-        std::cerr << "Error creating table: " << sqlite3_errmsg(db) << std::endl;
+        std::cerr << "SQL error: " << err_msg << std::endl;
+        sqlite3_free(err_msg);
+    }
+    else {
+        std::cout << "Table created or already exists.\n";
+    }
+
+    sqlite3_close(db);
+}
+
+void log_ip(const std::string& ip) {
+    sqlite3* db;
+    char* err_msg = 0;
+    int rc = sqlite3_open("ips.db", &db);
+
+    if (rc != SQLITE_OK) {
+        std::cerr << "Cannot open database: " << sqlite3_errmsg(db) << std::endl;
         sqlite3_close(db);
         return;
     }
 
-    sql = "INSERT INTO ips (ip) VALUES ('" + ip + "');";
-    rc = sqlite3_exec(db, sql.c_str(), 0, 0, 0);
+    std::string sql_select = "SELECT count FROM ips WHERE ip = '" + ip + "';";
+    sqlite3_stmt* stmt;
+    rc = sqlite3_prepare_v2(db, sql_select.c_str(), -1, &stmt, nullptr);
+
     if (rc != SQLITE_OK) {
-        std::cerr << "Error inserting data: " << sqlite3_errmsg(db) << std::endl;
+        std::cerr << "Failed to fetch IP: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_finalize(stmt);
         sqlite3_close(db);
         return;
     }
 
+    rc = sqlite3_step(stmt);
+    if (rc == SQLITE_ROW) {
+        int count = sqlite3_column_int(stmt, 0);
+        count++;
+        std::string sql_update = "UPDATE ips SET count = " + std::to_string(count) + " WHERE ip = '" + ip + "';";
+        rc = sqlite3_exec(db, sql_update.c_str(), 0, 0, &err_msg);
+
+        if (rc != SQLITE_OK) {
+            std::cerr << "SQL error: " << err_msg << std::endl;
+            sqlite3_free(err_msg);
+        }
+        else {
+            std::cout << "IP count updated successfully\n";
+        }
+    }
+    else {
+        std::string sql_insert = "INSERT INTO ips (ip, count) VALUES ('" + ip + "', 1);";
+        rc = sqlite3_exec(db, sql_insert.c_str(), 0, 0, &err_msg);
+
+        if (rc != SQLITE_OK) {
+            std::cerr << "SQL error: " << err_msg << std::endl;
+            sqlite3_free(err_msg);
+        }
+        else {
+            std::cout << "IP logged successfully\n";
+        }
+    }
+
+    sqlite3_finalize(stmt);
     sqlite3_close(db);
 }
 
@@ -76,6 +129,7 @@ void do_session(tcp::socket socket)
 
 int main() {
     try {
+        initialize_database();
         auto const address = net::ip::make_address("0.0.0.0");
         unsigned short port = static_cast<unsigned short>(8080);
 

@@ -8,7 +8,7 @@ def index():
     try:
         conn = sqlite3.connect('ips.db')
         cursor = conn.cursor()
-        cursor.execute("SELECT ip, count FROM ips")
+        cursor.execute("SELECT ip, count FROM ips ORDER BY count DESC LIMIT 5;")
         ips = cursor.fetchall()
         conn.close()
 

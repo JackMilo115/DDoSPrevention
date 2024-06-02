@@ -1,16 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Logged IPs</title>
-    </head>
-    <body>
-        <h1>Logged IP Addresses</h1>
-        <ul>
-            {% for ip, count in ips %}
-            <li>{{ ip }} - Charm: {{ count }}</li>
-            {% endfor %}
-        </ul>
-    </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bootstrap Grid Example</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: #333;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .top-bar {
+      background-color: red;
+      color: white;
+      padding: 15px 0;
+      text-align: center;
+      font-weight: 700;
+      width: 100%;
+      position: fixed;
+      top: 0;
+      z-index: 1000;
+    }
+    .content {
+      margin-top: 100px; /* Adjust this value if the top bar height changes */
+      width: 100%;
+    }
+    .grid-container {
+      padding: 20px; /* Padding around the grid to separate it from the content edge */
+    }
+    .grid-item {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px; /* Increased height for larger boxes */
+      background-color: #555;
+      border: 1px solid #444;
+      flex-direction: column;
+      text-align: center;
+      font-weight: 700;
+      padding: 10px; /* Padding inside the grid item */
+    }
+
+    .grid-item-merged {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 400; /* Increased height for larger boxes */
+        background-color: #555;
+        border: 1px solid #444;
+        flex-direction: column;
+        text-align: center;
+        font-weight: 700;
+        padding: 10px; /* Padding inside the grid item */
+    }
+  </style>
+</head>
+<body>
+  <!-- Top bar with centered title -->
+  <div class="top-bar">
+    <h1>DDOS ATTACK IN PROGRESS</h1>
+  </div>
+
+  <!-- Content to add top margin -->
+  <div class="content">
+    <!-- Grid layout with 3 columns and 2 rows -->
+    <div class="container">
+        <div class="row">
+            <div class="col-8">
+              <div class="row">
+                <div class="col-6 grid-item">
+                    <p>CONNECTIONS/S</p>
+                    <p>23</p>
+                </div>
+                <div class="col-6 grid-item">
+                    <p>IPS STORED</p>
+                    <p>6</p>
+                </div>
+                <div class="col-6 grid-item" >
+                  <p>LIMIT</p>
+                  <p>20</p>
+                </div>
+                <div class="col-6 grid-item">
+                  <p>CHARM REQUIREMENT</p>
+                  <p>10</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-4 grid-item-merged">
+                <p>TOP IPS - CHARM</p>
+                <p>
+                    {% for ip, count in ips %}
+                    {{ ip }} - {{ count }}
+                    {% endfor %}
+                </p>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
 </html>
